@@ -85,11 +85,13 @@ static const struct wl_buffer_listener wl_buffer_listener = {
 
 static void
 cairo_set_source_u32(cairo_t *cairo, uint32_t color) {
-	cairo_set_source_rgba(cairo,
+	cairo_set_source_rgba(
+		cairo,
 		(color >> 24 & 0xff) / 255.,
 		(color >> 16 & 0xff) / 255.,
 		(color >> 8 & 0xff) / 255.,
-		(color >> 0 & 0xff) / 255.);
+		(color >> 0 & 0xff) / 255.
+	);
 }
 
 static struct wl_buffer *
@@ -127,9 +129,11 @@ draw_frame(struct client_state *state)
 
 	PangoLayout *layout = pango_cairo_create_layout(cairo);
 	PangoFontDescription *desc = pango_font_description_from_string(state->font);
-	pango_layout_set_text(layout, state->text, -1);
 	pango_layout_set_font_description(layout, desc);
+	pango_font_description_free (desc);
+
 	cairo_set_source_u32(cairo, state->fg);
+	pango_layout_set_text(layout, state->text, -1);
 	pango_layout_get_size(layout, &width, &height);
 	cairo_move_to(cairo, state->width - width / PANGO_SCALE,
 		(state->height - height / PANGO_SCALE) / 2);
@@ -242,6 +246,7 @@ main(int argc, char *argv[])
 	zwlr_layer_surface_v1_add_listener(state.zwlr_layer_surface_v1, &zwlr_layer_surface_v1_listener, &state);
 
     wl_surface_commit(state.wl_surface);
+    wl_display_roundtrip(state.wl_display);
 
 	struct wl_callback *cb = wl_surface_frame(state.wl_surface);	
 	wl_callback_add_listener(cb, &wl_surface_frame_listener, &state);
