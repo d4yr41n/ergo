@@ -67,8 +67,8 @@ struct client_state {
 	struct zwlr_layer_shell_v1 *zwlr_layer_shell_v1;
 	struct zwlr_layer_surface_v1 *zwlr_layer_surface_v1;
 
-	int width;
-	int height;
+	int width, height;
+	uint32_t bg, fg;
 	char *font;
 	char text[256];
 };
@@ -82,6 +82,15 @@ wl_buffer_release(void *data, struct wl_buffer *wl_buffer)
 static const struct wl_buffer_listener wl_buffer_listener = {
     .release = wl_buffer_release,
 };
+
+static void
+cairo_set_source_u32(cairo_t *cairo, uint32_t color) {
+	cairo_set_source_rgba(cairo,
+		(color >> 24 & 0xff) / 255.,
+		(color >> 16 & 0xff) / 255.,
+		(color >> 8 & 0xff) / 255.,
+		(color >> 0 & 0xff) / 255.);
+}
 
 static struct wl_buffer *
 draw_frame(struct client_state *state)
@@ -112,14 +121,15 @@ draw_frame(struct client_state *state)
 	cairo_surface_t *surface = cairo_image_surface_create_for_data(data,
 		CAIRO_FORMAT_ARGB32, state->width, state->height, stride);
 	cairo_t *cairo = cairo_create(surface);
-	cairo_set_source_rgb(cairo, 255., 255., 255.);
+
+	cairo_set_source_u32(cairo, state->bg);
 	cairo_paint(cairo);
 
 	PangoLayout *layout = pango_cairo_create_layout(cairo);
 	PangoFontDescription *desc = pango_font_description_from_string(state->font);
 	pango_layout_set_text(layout, state->text, -1);
 	pango_layout_set_font_description(layout, desc);
-	cairo_set_source_rgb(cairo, .0, .0, .0);
+	cairo_set_source_u32(cairo, state->fg);
 	pango_layout_get_size(layout, &width, &height);
 	cairo_move_to(cairo, state->width - width / PANGO_SCALE,
 		(state->height - height / PANGO_SCALE) / 2);
@@ -207,7 +217,8 @@ main(int argc, char *argv[])
 		.width = 1920,
 		.height = 30,
 		.font = "Fantasque Sans Mono 19",
-		.text = "ergo"
+		.bg = 0x0f0f0fff,
+		.fg = 0xffffffff
 	};
 
     state.wl_display = wl_display_connect(NULL);

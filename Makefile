@@ -2,7 +2,7 @@ CC ?= cc
 PREFIX ?= /usr/local
 BIN ?= ergo
 
-CFLAGS += $(shell pkg-config --cflags wayland-client cairo pangocairo)
+CFLAGS += $(shell pkg-config --cflags wayland-client cairo pangocairo) -Wall -Wextra -g -Wno-unused-parameter
 LDLIBS += $(shell pkg-config --libs wayland-client cairo pangocairo) -lrt
 WAYLAND_PROTOCOLS = $(shell pkg-config --variable=pkgdatadir wayland-protocols)
 
