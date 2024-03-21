@@ -2,18 +2,16 @@
 
 Status bar for Wayland compositors
 
-## Installation
-
-### Dependencies
+## Dependencies
 
 - wayland
 - cairo
 - pango
 
-### Build
+## Usage
 
 ```
-make
+while true; do echo "$(uptime -p) | $(date +%R) "; sleep 1; done | ergo
 ```
 
 ## Thanks
