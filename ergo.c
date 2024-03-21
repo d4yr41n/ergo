@@ -2,6 +2,7 @@
 #include <errno.h>
 #include <fcntl.h>
 #include <stdbool.h>
+#include <ctype.h>
 #include <string.h>
 #include <sys/mman.h>
 #include <time.h>
@@ -151,6 +152,8 @@ zwlr_layer_surface_v1_configure(void *data,
 		uint32_t serial, uint32_t width, uint32_t height)
 {
 	struct client_state *state = data;
+	state->width = width;
+	state->height = height;
 	zwlr_layer_surface_v1_ack_configure(zwlr_layer_surface_v1, serial);
 
 	struct wl_buffer *buffer = draw_frame(state);
@@ -215,45 +218,105 @@ static const struct wl_registry_listener wl_registry_listener = {
 };
 
 int
+get_font_height(const char *fontname) {
+	PangoFontMap *fontmap = pango_cairo_font_map_get_default();
+	PangoContext *context = pango_font_map_create_context(fontmap);
+	PangoFontDescription *desc = pango_font_description_from_string(fontname);
+	PangoFont *font = pango_font_map_load_font(fontmap, context, desc);
+	PangoFontMetrics *metrics = pango_font_get_metrics(font, NULL);
+	int height = pango_font_metrics_get_height(metrics) / PANGO_SCALE;
+	pango_font_metrics_unref(metrics);
+	pango_font_description_free(desc);
+	g_object_unref(context);
+	g_object_unref(font);
+	return height;
+}
+
+
+static bool
+parse_color(const char *color, uint32_t *result) {
+	if (color[0] == '#') {
+		++color;
+	}
+	size_t len = strlen(color);
+	if ((len != 6 && len != 8) || !isxdigit(color[0]) || !isxdigit(color[1])) {
+		return false;
+	}
+	char *ptr;
+	uint32_t parsed = (uint32_t)strtoul(color, &ptr, 16);
+	if (*ptr != '\0') {
+		return false;
+	}
+	*result = len == 6 ? ((parsed << 8) | 0xff) : parsed;
+	return true;
+}
+
+int
 main(int argc, char *argv[])
 {
-	struct client_state state = {
-		.width = 1920,
-		.height = 30,
-		.font = "Fantasque Sans Mono 19",
-		.bg = 0x0f0f0fff,
-		.fg = 0xffffffff
-	};
+	struct client_state *state = calloc(1, sizeof(struct client_state));
+	state->font = "monospace 10";
+	state->bg = 0x000000ff;
+	state->fg = 0xffffffff;
+	const char *usage = "Usage: ergo [-f font] [-b color] [-c color]\n";
+	int opt;
+	while ((opt = getopt(argc, argv, "hf:b:c:")) != -1) {
+		switch (opt) {
+			case 'f':
+				state->font = optarg;
+				break;
+			case 'b':
+				if (!parse_color(optarg, &state->bg)) {
+					fprintf(stderr, "Invalid background color: %s", optarg);
+				}
+				break;
+			case 'c':
+				if (!parse_color(optarg, &state->fg)) {
+					fprintf(stderr, "Invalid foreground color: %s", optarg);
+				}
+				break;
+			default:
+				fprintf(stderr, "%s", usage);
+				exit(EXIT_FAILURE);
+		}
+	}
 
-	state.wl_display = wl_display_connect(NULL);
-	state.wl_registry = wl_display_get_registry(state.wl_display);
-	wl_registry_add_listener(state.wl_registry, &wl_registry_listener, &state);
-	wl_display_roundtrip(state.wl_display);
+	if (optind < argc) {
+		fprintf(stderr, "%s", usage);
+		exit(EXIT_FAILURE);
+	}
 
-	state.wl_surface = wl_compositor_create_surface(state.wl_compositor);
-	state.zwlr_layer_surface_v1 = zwlr_layer_shell_v1_get_layer_surface(
-		state.zwlr_layer_shell_v1,
-		state.wl_surface,
-		state.wl_output,
+	state->height = get_font_height(state->font) + 3;
+
+	state->wl_display = wl_display_connect(NULL);
+	state->wl_registry = wl_display_get_registry(state->wl_display);
+	wl_registry_add_listener(state->wl_registry, &wl_registry_listener, state);
+	wl_display_roundtrip(state->wl_display);
+
+	state->wl_surface = wl_compositor_create_surface(state->wl_compositor);
+	state->zwlr_layer_surface_v1 = zwlr_layer_shell_v1_get_layer_surface(
+		state->zwlr_layer_shell_v1,
+		state->wl_surface,
+		state->wl_output,
 		ZWLR_LAYER_SHELL_V1_LAYER_TOP,
 		"ergo"
 	);
-	zwlr_layer_surface_v1_set_anchor(state.zwlr_layer_surface_v1,
+	zwlr_layer_surface_v1_set_anchor(state->zwlr_layer_surface_v1,
 		ZWLR_LAYER_SURFACE_V1_ANCHOR_LEFT | ZWLR_LAYER_SURFACE_V1_ANCHOR_RIGHT | ZWLR_LAYER_SURFACE_V1_ANCHOR_TOP
 	);
-	zwlr_layer_surface_v1_set_size(state.zwlr_layer_surface_v1, state.width, state.height);
-	zwlr_layer_surface_v1_set_exclusive_zone(state.zwlr_layer_surface_v1, state.height);
-	zwlr_layer_surface_v1_add_listener(state.zwlr_layer_surface_v1, &zwlr_layer_surface_v1_listener, &state);
+	zwlr_layer_surface_v1_set_size(state->zwlr_layer_surface_v1, state->width, state->height);
+	zwlr_layer_surface_v1_set_exclusive_zone(state->zwlr_layer_surface_v1, state->height);
+	zwlr_layer_surface_v1_add_listener(state->zwlr_layer_surface_v1, &zwlr_layer_surface_v1_listener, state);
 
-	wl_surface_commit(state.wl_surface);
-	wl_display_roundtrip(state.wl_display);
+	wl_surface_commit(state->wl_surface);
+	wl_display_roundtrip(state->wl_display);
 
-	struct wl_callback *cb = wl_surface_frame(state.wl_surface);	
-	wl_callback_add_listener(cb, &wl_surface_frame_listener, &state);
+	struct wl_callback *cb = wl_surface_frame(state->wl_surface);	
+	wl_callback_add_listener(cb, &wl_surface_frame_listener, state);
 	
-	while (wl_display_dispatch(state.wl_display)) {
-		fgets(state.text, sizeof state.text, stdin);
-		state.text[strcspn(state.text, "\n")] = 0;
+	while (wl_display_dispatch(state->wl_display)) {
+		fgets(state->text, sizeof state->text, stdin);
+		state->text[strcspn(state->text, "\n")] = 0;
 	}
 
 	return 0;

@@ -19,5 +19,5 @@ make
 ## Thanks
 
 - [Wayland Book](https://wayland-book.com) - code base (7.3)
-- [wmenu](https://sr.ht/~adnano/wmenu) - code examples (layer-shell, cairo)
+- [wmenu](https://sr.ht/~adnano/wmenu) - code examples (layer-shell, cairo, etc.)
 
