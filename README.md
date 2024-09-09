@@ -1,6 +1,6 @@
-# ergo
+# Ergo
 
-Status bar for Wayland compositors
+A minimal status bar for Wayland compositors
 
 ## Dependencies
 
@@ -10,8 +10,10 @@ Status bar for Wayland compositors
 
 ## Usage
 
+Ergo uses stdin to get data for display
+
 ```
-while true; do echo ' $(date +%R) '; sleep 5; done | ergo -F 'Fantasque Sans Mono 19' -b '3f3f3f'"
+while true; do echo ' $(date +%R) '; sleep 5; done | ergo -F 'Fantasque Sans Mono 18' -b '3f3f3f'"
 ```
 
 ![example](example.png)
