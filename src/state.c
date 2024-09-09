@@ -52,15 +52,16 @@ state_update(struct state *state)
 	char c;
 	bool update = false;
 	for (i = 0; (c = getchar()) != EOF && i < BUFSIZ; i++) {
+		if (!update) {
+		  if (state->text[i] != c)
+			  update = true;
+		}
 		if (update) {
 			if (c == '\n') {
 				state->text[i] = '\0';
 				break;
 			}
 			state->text[i] = c;
-		} else {
-		  if (state->text[i] != c)
-			  update = true;
 		}
 	}
 	return update;
