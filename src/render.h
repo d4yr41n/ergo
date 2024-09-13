@@ -3,6 +3,6 @@
 
 #include "state.h"
 
-struct wl_buffer *render(struct state *state);
+void render(void *data, struct state *state);
 
 #endif

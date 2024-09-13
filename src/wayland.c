@@ -1,17 +1,24 @@
 #include <string.h>
 #include <wayland-client.h>
+#include <unistd.h>
+#include <sys/mman.h>
 
 #include "wlr-layer-shell-unstable-v1-client-protocol.h"
 
 #include "state.h"
 #include "render.h"
 #include "wayland.h"
+#include "shm.h"
 
 void
 wl_buffer_release(void *data, struct wl_buffer *wl_buffer)
 {
 	wl_buffer_destroy(wl_buffer);
 }
+
+static const struct wl_buffer_listener wl_buffer_listener = {
+	.release = wl_buffer_release
+};
 
 static void
 zwlr_layer_surface_v1_configure(void *data,
@@ -23,7 +30,7 @@ zwlr_layer_surface_v1_configure(void *data,
 	state->height = height;
 	zwlr_layer_surface_v1_ack_configure(zwlr_layer_surface_v1, serial);
 
-	struct wl_buffer *buffer = render(state);
+	struct wl_buffer *buffer = create_buffer(state);
 	wl_surface_attach(state->wl_surface, buffer, 0, 0);
 	wl_surface_commit(state->wl_surface);
 }
@@ -53,17 +60,9 @@ registry_global(void *data, struct wl_registry *wl_registry,
 	}
 }
 
-static void
-registry_global_remove(void *data, struct wl_registry *wl_registry, uint32_t name)
-{
-	// pass
-}
-
 static const struct wl_registry_listener wl_registry_listener = {
 	.global = registry_global,
-	.global_remove = registry_global_remove
 };
-
 
 void
 wayland_init(struct state *state)
@@ -90,4 +89,36 @@ wayland_init(struct state *state)
 
 	wl_surface_commit(state->wl_surface);
 	wl_display_roundtrip(state->wl_display);
+}
+
+struct wl_buffer *
+create_buffer(struct state *state)
+{
+	int stride = state->width * 4;
+	int size = stride * state->height;
+
+	int fd = allocate_shm_file(size);
+	if (fd == -1) {
+		return NULL;
+	}
+
+	// uint32_t 
+	void *data = mmap(NULL, size,
+			PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
+	if (data == MAP_FAILED) {
+		close(fd);
+		return NULL;
+	}
+
+	struct wl_shm_pool *pool = wl_shm_create_pool(state->wl_shm, fd, size);
+	struct wl_buffer *buffer = wl_shm_pool_create_buffer(pool, 0,
+			state->width, state->height, stride, WL_SHM_FORMAT_ARGB8888);
+	wl_shm_pool_destroy(pool);
+	close(fd);
+
+	render(data, state);
+
+	munmap(data, size);
+	wl_buffer_add_listener(buffer, &wl_buffer_listener, NULL);
+	return buffer;
 }

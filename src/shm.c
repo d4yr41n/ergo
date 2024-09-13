@@ -17,7 +17,7 @@ randname(char *buf)
 	}
 }
 
-int
+static int
 create_shm_file(void)
 {
 	int retries = 100;

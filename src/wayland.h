@@ -3,13 +3,8 @@
 
 #include "state.h"
 
-void
-wl_buffer_release(void *data, struct wl_buffer *wl_buffer);
 
-static const struct wl_buffer_listener wl_buffer_listener = {
-	.release = wl_buffer_release
-};
-
+struct wl_buffer *create_buffer(struct state *state);
 void wayland_init(struct state *state);
   
 #endif
