@@ -1,14 +1,14 @@
 pkgname=ergo
-pkgver=0.0.1
+pkgver=0.0.2
 pkgrel=1
-pkgdesc="A minimal status bar for Wayland status bar"
+pkgdesc="A minimal status bar for Wayland compositors"
 arch=(x86_64)
 url=https://github.com/d4yr41n/ergo
 license=(MIT)
 depends=(cairo pango wlroots)
 makedepends=(make wayland-protocols)
-source=("https://github.com/d4yr41n/ergo/releases/download/0.0.1/ergo-0.0.1.tar.gz")
-sha256sums=("6aa9f317ffc2f19932d5b2f9beb1437630e7681bbecae8fa539dcc7e2224062e")
+source=("https://github.com/d4yr41n/ergo/releases/download/0.0.2/ergo-0.0.2.tar.gz")
+sha256sums=("df9035e0beb740f38f2a494579d4cc916b1a5587ad21afc58dee99ae194184f7")
 
 build() {
 	cd "${srcdir}/${pkgname}-${pkgver}"
