@@ -1,0 +1,4 @@
+.gitattributes export-ignroe
+.gitignore export-ignore
+example.png export-ignore
+PKGBUILD export-ignore
