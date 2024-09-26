@@ -105,7 +105,7 @@ state_init(int argc, char *argv[]) {
 		exit(EXIT_FAILURE);
 	}
 
-  state->height = get_font_height(state->font) + 3;
+  state->height = get_font_height(state->font) + 2;
 
   wayland_init(state);
 
