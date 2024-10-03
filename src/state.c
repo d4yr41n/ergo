@@ -74,11 +74,15 @@ state_init(int argc, char *argv[]) {
 	state->bg = 0x000000ff;
 	state->fg = 0xffffffff;
 	state->anchor = ZWLR_LAYER_SURFACE_V1_ANCHOR_TOP;
+	state->right = false;
 
 	const char *usage = "Usage: ergo [-B] [-F font] [-b color] [-f color]\n";
 	int opt;
-	while ((opt = getopt(argc, argv, "hBF:b:f:")) != -1) {
+	while ((opt = getopt(argc, argv, "hBF:b:f:r")) != -1) {
 		switch (opt) {
+			case 'r':
+				state->right = true;
+				break;
 			case 'B':
 				state->anchor = ZWLR_LAYER_SURFACE_V1_ANCHOR_BOTTOM;
 				break;
@@ -105,7 +109,7 @@ state_init(int argc, char *argv[]) {
 		exit(EXIT_FAILURE);
 	}
 
-  state->height = get_font_height(state->font) + 2;
+  state->height = get_font_height(state->font) + 7;
 
   wayland_init(state);
 

@@ -44,8 +44,12 @@ render(void *data, struct state *state)
 	cairo_set_source_u32(cairo, state->fg);
 	pango_layout_set_text(layout, state->text, -1);
 	pango_layout_get_size(layout, &width, &height);
-	cairo_move_to(cairo, state->width - width / PANGO_SCALE,
-		(state->height - height / PANGO_SCALE) / 2);
+	int x;
+	if (state->right)
+		x = state->width - width / PANGO_SCALE;
+	else
+		x = 0;
+	cairo_move_to(cairo, x, (state->height - height / PANGO_SCALE) / 2);
 	pango_cairo_show_layout(cairo, layout);
 	g_object_unref(layout);
 }

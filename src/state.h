@@ -15,6 +15,7 @@ struct state {
 	struct zwlr_layer_shell_v1 *zwlr_layer_shell_v1;
 	struct zwlr_layer_surface_v1 *zwlr_layer_surface_v1;
 
+	bool right;
 	int width, height;
 	uint32_t bg, fg;
 	char *font;
