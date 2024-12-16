@@ -13,7 +13,7 @@ A minimal status bar for Wayland compositors
 Ergo uses stdin to get data for display
 
 ```
-while true; do echo ' $(date +%R) '; sleep 5; done | ergo -F 'Fantasque Sans Mono 18' -b '3f3f3f'"
+while true; do echo " $(date +%R) "; sleep 5; done | ergo -b '3f3f3f'
 ```
 
 ![example](example.png)
