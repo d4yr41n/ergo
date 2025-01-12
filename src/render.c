@@ -20,7 +20,11 @@ cairo_set_source_u32(cairo_t *cairo, uint32_t color) {
 void
 render(void *data, struct state *state)
 {
-	int width, height;
+	int *width_array = malloc(state->item_count * sizeof(int));
+	int width = 0;
+	int height;
+	int i;
+
 	int stride = state->width * 4;
 
 	cairo_surface_t *surface = cairo_image_surface_create_for_data(
@@ -33,7 +37,7 @@ render(void *data, struct state *state)
 	cairo_t *cairo = cairo_create(surface);
 
 	cairo_set_antialias(cairo, CAIRO_ANTIALIAS_BEST);
-	cairo_set_source_u32(cairo, state->bg);
+	cairo_set_source_u32(cairo, state->normal_bg);
 	cairo_paint(cairo);
 
 	PangoLayout *layout = pango_cairo_create_layout(cairo);
@@ -41,16 +45,40 @@ render(void *data, struct state *state)
 	pango_layout_set_font_description(layout, desc);
 	pango_font_description_free(desc);
 
-	cairo_set_source_u32(cairo, state->fg);
-	pango_layout_set_text(layout, state->text, -1);
-	pango_layout_get_size(layout, &width, &height);
+	int j;
+	for (i = 0; i < state->item_count; i++) {
+		pango_layout_set_text(layout, state->items[i], -1);
+		pango_layout_get_pixel_size(layout, &j, &height);
+		width_array[i] = j;
+		width += j;
+	}
+
 	int x;
 	if (state->right)
-		x = state->width - width / PANGO_SCALE;
+		x = state->width - width;
 	else
 		x = 0;
-	cairo_move_to(cairo, x, (state->height - height / PANGO_SCALE) / 2);
-	pango_cairo_show_layout(cairo, layout);
+
+	bool select = false;
+	for (i = 0; i < state->item_count; i++) {
+		pango_layout_set_text(layout, state->items[i], -1);
+		if (select) {
+			cairo_set_source_u32(cairo, state->select_bg);
+			cairo_rectangle(cairo, x, 0, width_array[i], state->height);
+			cairo_fill(cairo);
+			cairo_set_source_u32(cairo, state->select_fg);
+			select = false;
+		} else {
+			select = true;
+			cairo_set_source_u32(cairo, state->normal_fg);
+		}
+
+		cairo_move_to(cairo, x, (state->height - height) / 2);
+		pango_cairo_show_layout(cairo, layout);
+
+		x += width_array[i];
+	}
+
 	g_object_unref(layout);
 }
 

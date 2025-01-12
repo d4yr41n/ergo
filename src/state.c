@@ -20,9 +20,9 @@ get_font_height(const char *fontname)
 	PangoFontMetrics *metrics = pango_font_get_metrics(font, NULL);
 	int height = pango_font_metrics_get_height(metrics) / PANGO_SCALE;
 	pango_font_metrics_unref(metrics);
+	g_object_unref(font);
 	pango_font_description_free(desc);
 	g_object_unref(context);
-	g_object_unref(font);
 	return height;
 }
 
@@ -45,58 +45,69 @@ parse_color(const char *color, uint32_t *result)
 	return true;
 }
 
-bool
-state_update(struct state *state)
-{
-	int i;
-	char c;
-	bool update = false;
-	for (i = 0; (c = getchar()) != EOF && i < BUFSIZ; i++) {
-		if (!update) {
-		  if (state->text[i] != c)
-			  update = true;
-		}
-		if (update) {
-			if (c == '\n') {
-				state->text[i] = '\0';
-				break;
-			}
-			state->text[i] = c;
+void parse_input(struct state *state, char *input) {
+	int i = 0;
+	char *ptr, *exc;
+	state->items[i] = ptr = input;
+
+	int length = strlen(input);
+	if (input[length - 1] == '\n')
+		input[length - 1] = '\0';
+
+	while ((ptr = strchr(ptr, '^'))) {
+		if ((exc = ptr - 1)[0] == '\\') {
+		  memmove(exc, ptr, &input[length - 1] - exc);
+		  length--;
+		} else {
+		  *ptr = '\0';
+		  ptr++;
+		  i++;
+		  state->items[i] = ptr;
 		}
 	}
-	return update;
+	state->item_count = i + 1;
 }
 
 struct state *
 state_init(int argc, char *argv[]) {
   struct state *state = malloc(sizeof(struct state));
-	state->font = "monospace 10";
-	state->bg = 0x000000ff;
-	state->fg = 0xffffffff;
+	state->font = "monospace 16";
+	state->normal_bg = state->select_fg = 0x000000ff;
+	state->normal_fg = state->select_bg = 0xffffffff;
 	state->anchor = ZWLR_LAYER_SURFACE_V1_ANCHOR_TOP;
 	state->right = false;
-
-	const char *usage = "Usage: ergo [-B] [-F font] [-b color] [-f color]\n";
+	state->item_count = 0;
+	const char *usage = "Usage: ergo [-br] [-f font] [-N color] [-n color] [-S color] [-s color]\n";
 	int opt;
-	while ((opt = getopt(argc, argv, "hBF:b:f:r")) != -1) {
+	while ((opt = getopt(argc, argv, "hbrf:N:n:S:s:")) != -1) {
 		switch (opt) {
 			case 'r':
 				state->right = true;
 				break;
-			case 'B':
+			case 'b':
 				state->anchor = ZWLR_LAYER_SURFACE_V1_ANCHOR_BOTTOM;
 				break;
-			case 'F':
+			case 'f':
 				state->font = optarg;
 				break;
-			case 'b':
-				if (!parse_color(optarg, &state->bg)) {
-					fprintf(stderr, "Invalid background color: %s", optarg);
+			case 'N':
+				if (!parse_color(optarg, &state->normal_bg)) {
+					fprintf(stderr, "Invalid normal background color: %s", optarg);
 				}
 				break;
-			case 'f':
-				if (!parse_color(optarg, &state->fg)) {
-					fprintf(stderr, "Invalid foreground color: %s", optarg);
+			case 'n':
+				if (!parse_color(optarg, &state->normal_fg)) {
+					fprintf(stderr, "Invalid normal foreground color: %s", optarg);
+				}
+				break;
+			case 'S':
+				if (!parse_color(optarg, &state->select_bg)) {
+					fprintf(stderr, "Invalid select background color: %s", optarg);
+				}
+				break;
+			case 's':
+				if (!parse_color(optarg, &state->select_fg)) {
+					fprintf(stderr, "Invalid select foreground color: %s", optarg);
 				}
 				break;
 			default:
@@ -108,10 +119,7 @@ state_init(int argc, char *argv[]) {
 		fprintf(stderr, "%s", usage);
 		exit(EXIT_FAILURE);
 	}
-
-  state->height = get_font_height(state->font) + 7;
-
+  state->height = get_font_height(state->font) + 2;
   wayland_init(state);
-
   return state;
 }

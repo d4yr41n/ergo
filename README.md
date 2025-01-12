@@ -1,6 +1,6 @@
 # Ergo
 
-A minimal status bar for Wayland compositors
+A minimal status bar for Wayland compositors.
 
 ## Dependencies
 
@@ -10,13 +10,21 @@ A minimal status bar for Wayland compositors
 
 ## Usage
 
-Ergo uses stdin to get data for display
+Use stdin to pass text for display.
+Use `^` to highlight text (can be escaped with a slash `\^`).
+
+### Examples
 
 ```
-while true; do echo " $(date +%R) "; sleep 5; done | ergo -b '3f3f3f'
+while true; do echo $(date +%R); sleep 5; done | ergo -rN '3f3f3f'
 ```
 
-![example](example.png)
+```
+echo " some ^ awesome ^ text " | ergo
+```
+
+![example](example0.png)
+![example](example1.png)
 
 ## Thanks
 
